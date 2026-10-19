@@ -1,8 +1,7 @@
 # Wedding invitation
 
-Static wedding invitation with a realistic navy wax-seal opening, six invitation sections, layered stationery animations and a countdown. Names, dates, venue and photos are examples.
+Static six-page wedding invitation. Sample names, photos, date and venue.
 
-## Vercel
-Connect this repository to the existing project. Production branch: main. Framework: Other. Root directory: repository root. No build or install command. Output directory: .
+Connect this repository to the existing Vercel project. Production branch: main. Framework: Other. Root: repository root. No build or install command. Output: .
 
-Updates to the production branch deploy automatically after the Git connection is configured.
+Includes realistic navy wax-seal opening, layered stationery transitions and countdown. FAQ section removed.
