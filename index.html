@@ -94,6 +94,20 @@ body.locked .music-toggle{visibility:hidden}
 .palette-color span{font:10px/1.4 Georgia,serif;max-width:70px}.dress>p{line-height:2}
 @media(max-width:360px){.opening-inner{padding:36px 25px}.heirloom-frame{padding:9px;gap:6px}.frame-photos{padding:12px 7px}.door-wording{font-size:12px}.opening-photo-strip img{height:48px}.love-wording{font-size:19px;letter-spacing:4px!important}.love-countdown .countdown{font-size:28px;gap:9px}}
 @media(prefers-reduced-motion:reduce){.invitation-opening,.frame-door{transition:none!important}}
+
+/* Frame-to-invitation cinematic transition. */
+.invitation-opening{transition:opacity 1.15s 1.05s,visibility 0s 2.6s}
+.invitation-opening .opening-inner{transform-origin:50% 57%;transition:transform 2.35s cubic-bezier(.2,.65,.2,1),filter 1.9s .25s}
+.invitation-opening.opening .opening-inner{transform:scale(1.18);filter:blur(3px)}
+.invitation-opening .frame-door{transition:transform 1.35s cubic-bezier(.22,.65,.15,1),opacity 1s .35s}
+.invitation-opening.opening .frame-door{transform:rotateY(-125deg);opacity:0}
+.invitation-opening .opening-caption,.invitation-opening .opening-date{transition:opacity .45s}
+.invitation-opening.opening .opening-caption,.invitation-opening.opening .opening-date{opacity:0}
+.invitation-opening:after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 57%,#fff8e9aa,transparent 70%);opacity:0;transition:opacity .9s .45s}
+.invitation-opening.opening:after{opacity:.65}
+body.opening-journey #book{animation:invitation-arrive 2.6s cubic-bezier(.2,.65,.2,1) both}
+@keyframes invitation-arrive{0%,24%{opacity:0;transform:translateY(35px) scale(.975);filter:blur(6px)}70%{opacity:1;filter:blur(0)}100%{opacity:1;transform:none;filter:none}}
+@media(prefers-reduced-motion:reduce){.invitation-opening,.invitation-opening .opening-inner,.invitation-opening .frame-door,.invitation-opening:after{transition:none!important}.invitation-opening.opening .opening-inner{transform:none;filter:none}body.opening-journey #book{animation:none!important}}
 </style><link rel="stylesheet" href="/rsvp.css"><script defer src="/vendor/supabase-2.118.0.js"></script><script defer src="/rsvp-config.js"></script><script defer src="/rsvp.js"></script></head><body class="locked">
 <div class="invitation-opening" id="envelope" role="dialog" aria-modal="true" aria-label="Kelvyn and Nicole wedding invitation"><div class="opening-inner"><p class="eyebrow">JOIN US FOR THE WEDDING OF</p><div class="opening-names script">Kelvyn Ong <span>&</span><br>Nicole Sow</div><p class="opening-chinese">王敬淯 & 苏晓雯</p><div class="heirloom-frame"><button class="frame-door" id="open" aria-label="打开婚礼邀请函并播放音乐"><span class="frame-flourish" aria-hidden="true">❦</span><span class="door-wording">OPEN<br>THE<br>INVITATION</span><span class="frame-flourish" aria-hidden="true">❧</span><span class="door-knob" aria-hidden="true"></span></button><div class="frame-photos"><div class="opening-photo-strip"><img src="photo-0.jpg" alt="婚礼花艺"><img src="photo-1.jpg" alt="婚礼回忆"><img src="photo-2.jpg" alt="婚礼照片"><img src="photo-3.jpg" alt="婚礼细节"></div></div></div><p class="opening-date">16 JANUARY 2027</p><p class="opening-caption">Touch to open · 轻触开启邀请</p></div></div>
 <button class="replay" aria-label="重新打开邀请" title="重新打开邀请" id="replay">↺</button><nav class="nav" aria-label="请柬页码"><a href="#p1" aria-label="第一页面：我们的婚礼"></a><a href="#p2" aria-label="第二页面：我们的故事"></a><a href="#p3" aria-label="第三页面：幸福瞬间"></a><a href="#p4" aria-label="第四页面：婚礼日程"></a><a href="#p6" aria-label="第五页面：场地与停车"></a><a href="#p5" aria-label="第六页面：诚挚邀请"></a></nav>
@@ -109,8 +123,22 @@ body.locked .music-toggle{visibility:hidden}
 
 </main><script>
 const env=document.querySelector('#envelope'),book=document.querySelector('#book');let timer;
-document.querySelector('#open').onclick=()=>{env.classList.add('opening');clearTimeout(timer);timer=setTimeout(()=>{env.setAttribute('aria-hidden','true');env.inert=true;book.inert=false;document.body.classList.remove('locked');startReveals();document.querySelector('#replay').focus({preventScroll:true})},matchMedia('(prefers-reduced-motion: reduce)').matches?0:2200)};
-function reset(){clearTimeout(timer);revealObserver.disconnect();document.querySelectorAll('.reveal').forEach(el=>el.classList.remove('shown'));document.querySelectorAll('.page').forEach(el=>el.classList.remove('entered'));window.scrollTo({top:0,behavior:'instant'});document.documentElement.style.setProperty('--reading-progress',0);book.inert=true;document.body.classList.add('locked');env.inert=false;env.removeAttribute('aria-hidden');env.classList.remove('opening');document.querySelector('#open').focus({preventScroll:true})}document.querySelector('#replay').onclick=reset;document.querySelector('#again').onclick=reset;
+document.querySelector('#open').onclick=()=>{
+if(env.classList.contains('opening'))return;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+window.scrollTo({top:0,behavior:'instant'});
+document.body.classList.add('opening-journey');
+env.classList.add('opening');
+startReveals();
+clearTimeout(timer);
+timer=setTimeout(()=>{
+document.querySelector('#open').blur();
+env.setAttribute('aria-hidden','true');env.inert=true;book.inert=false;
+document.body.classList.remove('locked','opening-journey');
+document.querySelector('#replay').focus({preventScroll:true});
+},reduced?0:2600);
+};
+function reset(){clearTimeout(timer);document.body.classList.remove('opening-journey');revealObserver.disconnect();document.querySelectorAll('.reveal').forEach(el=>el.classList.remove('shown'));document.querySelectorAll('.page').forEach(el=>el.classList.remove('entered'));window.scrollTo({top:0,behavior:'instant'});document.documentElement.style.setProperty('--reading-progress',0);book.inert=true;document.body.classList.add('locked');env.inert=false;env.removeAttribute('aria-hidden');env.classList.remove('opening');document.querySelector('#open').focus({preventScroll:true})}document.querySelector('#replay').onclick=reset;document.querySelector('#again').onclick=reset;
 const links=[...document.querySelectorAll('.nav a')];const observer=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}})},{threshold:.5});document.querySelectorAll('.page').forEach(s=>observer.observe(s));
 document.querySelector('#calendar').onclick=()=>{const data=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Wedding Invitation//CN','BEGIN:VEVENT','UID:wedding-20270116@invitation','DTSTAMP:20261020T000000Z','DTSTART:20270116T100000Z','SUMMARY:Kelvyn Ong & Nicole Sow Wedding','DESCRIPTION:6pm Guest Arrival. 7pm Grand March-In + Dinner Start.',' 8pm Wedding Ceremony. All times Malaysia time.','LOCATION:The Lexious by De Villa\\, 3635-C\\, Jalan Limbongan\\,',' Kampung Kolam Limbongan\\, 75200 Klebang\\, Melaka','END:VEVENT','END:VCALENDAR'].join('\r\n');const u=URL.createObjectURL(new Blob([data],{type:'text/calendar;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='wedding-16-january-2027.ics';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 
