@@ -10,14 +10,15 @@
   const db=window.supabase?.createClient(WEDDING_DB.url,WEDDING_DB.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   function success(){form.hidden=true;document.getElementById('rsvp-success').hidden=false;document.getElementById('rsvp-success').focus();}
   if(pending?.done) success();
-  function countsState(){const yes=attendance.value==='yes';counts.hidden=!yes;form.elements.adults.disabled=!yes;}
+  function countsState(){const yes=attendance.value!=='no',minimum=attendance.value==='partner'?2:1;counts.hidden=!yes;form.elements.adults.disabled=!yes;form.elements.adults.min=String(minimum);if(yes&&Number(form.elements.adults.value)<minimum)form.elements.adults.value=String(minimum);}
   attendance.addEventListener('change',countsState);countsState();
   if(!db){button.disabled=true;status.textContent='The form could not load. Please refresh and try again.';}
   form.addEventListener('submit',async e=>{
     e.preventDefault();if(!db||button.disabled)return;
     if(form.elements.website.value)return;
-    const f=new FormData(form),yes=f.get('attending')==='yes';
+    const f=new FormData(form),yes=['yes','partner'].includes(f.get('attending'));
     const payload={name:String(f.get('name')).trim(),contact:String(f.get('contact')).trim(),attending:yes,adults:yes?Number(f.get('adults')):0,message:String(f.get('message')||'').trim()};
+    if(yes&&(!Number.isInteger(payload.adults)||payload.adults<(f.get('attending')==='partner'?2:1)||payload.adults>20)){status.textContent='Please enter a valid number of guests, including yourself and your partner if attending.';return;}
     if(!payload.name||payload.contact.length<6){status.textContent='Please enter your name and a valid contact number.';return;}
     // A retry reuses the same UUID. Only a fingerprint, not guest details, is saved locally.
     const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(payload)));
