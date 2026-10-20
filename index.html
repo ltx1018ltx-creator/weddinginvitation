@@ -116,6 +116,12 @@ body.opening-journey #book{animation:invitation-arrive 2.6s cubic-bezier(.2,.65,
 .love-gallery .love-first{margin-bottom:8px}
 .love-gallery .love-last{margin-top:10px}
 .love-gallery .love-last .love-capital{margin-left:2px;margin-right:5px}
+
+/* Three full-width horizontal photographs, stacked like the reference. */
+.love-gallery .three-photos{display:grid;grid-template-columns:minmax(0,1fr);gap:0;width:100%;padding:0}
+.love-gallery .three-photos img{width:100%;height:auto;aspect-ratio:2.35/1;object-fit:cover;object-position:center;display:block}
+.love-gallery .love-wording{font-size:clamp(18px,4.8vw,24px)}
+.love-gallery .love-wording .love-capital{font-size:clamp(56px,15vw,72px)}
 </style><link rel="stylesheet" href="/rsvp.css"><script defer src="/vendor/supabase-2.118.0.js"></script><script defer src="/rsvp-config.js"></script><script defer src="/rsvp.js"></script></head><body class="locked">
 <div class="invitation-opening" id="envelope" role="dialog" aria-modal="true" aria-label="Kelvyn and Nicole wedding invitation"><div class="opening-inner"><p class="eyebrow">JOIN US FOR THE WEDDING OF</p><div class="opening-names script">Kelvyn Ong <span>&</span><br>Nicole Sow</div><p class="opening-chinese">王敬淯 & 苏晓雯</p><div class="heirloom-frame"><button class="frame-door" id="open" aria-label="打开婚礼邀请函并播放音乐"><span class="frame-flourish" aria-hidden="true">❦</span><span class="door-wording">OPEN<br>THE<br>INVITATION</span><span class="frame-flourish" aria-hidden="true">❧</span><span class="door-knob" aria-hidden="true"></span></button><div class="frame-photos"><div class="opening-photo-strip"><img src="photo-0.jpg" alt="婚礼花艺"><img src="photo-1.jpg" alt="婚礼回忆"><img src="photo-2.jpg" alt="婚礼照片"><img src="photo-3.jpg" alt="婚礼细节"></div></div></div><p class="opening-date">16 JANUARY 2027</p><p class="opening-caption">Touch to open · 轻触开启邀请</p></div></div>
 <button class="replay" aria-label="重新打开邀请" title="重新打开邀请" id="replay">↺</button><nav class="nav" aria-label="请柬页码"><a href="#p1" aria-label="第一页面：我们的婚礼"></a><a href="#p2" aria-label="第二页面：我们的故事"></a><a href="#p3" aria-label="第三页面：幸福瞬间"></a><a href="#p4" aria-label="第四页面：婚礼日程"></a><a href="#p6" aria-label="第五页面：场地与停车"></a><a href="#p5" aria-label="第六页面：诚挚邀请"></a></nav>
