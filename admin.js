@@ -1,7 +1,7 @@
 (() => {
   const $=id=>document.getElementById(id), cfg=window.WEDDING_DB;
   if(!window.supabase){$('login-status').textContent='登录组件未能载入，请刷新。';$('login-button').disabled=true;return;}
-  const db=supabase.createClient(cfg.url,cfg.key,{auth:{storage:sessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  const db=supabase.createClient(cfg.url,cfg.key,{auth:{storage:sessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   let rows=[],authorized=false,channel=null,poll=null,loading=false,reload=false,selected=null,generation=0;
   const statuses={new:'待跟进',contacted:'已联系',confirmed:'已确认'};
   const time=v=>new Date(v).toLocaleString('zh-CN',{timeZone:'Asia/Kuala_Lumpur',hour12:false});
@@ -32,7 +32,30 @@
     channel=db.channel('wedding-admin').on('postgres_changes',{event:'*',schema:'public',table:'wedding_rsvps'},refresh).subscribe(state=>{$('connection').textContent=state==='SUBSCRIBED'?'● 实时同步已连接':'○ 实时连接中断或连接中 · 每 15 秒补充刷新';});
     clearInterval(poll);poll=setInterval(()=>{if(!document.hidden)refresh();},15000);
   }
-  $('login-form').addEventListener('submit',async e=>{e.preventDefault();const loginForm=e.currentTarget;$('login-button').disabled=true;$('login-status').textContent='正在登录…';try{const f=new FormData(loginForm);const {error}=await db.auth.signInWithPassword({email:String(f.get('email')).trim(),password:String(f.get('password'))});if(error)throw error;loginForm.reset();$('login-status').textContent='';await enter();}catch{$('login-status').textContent='无法登录，请检查账号和密码。';}finally{$('login-button').disabled=false;}});
+  $('login-form').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const signup=e.submitter?.value==='signup',loginForm=e.currentTarget,f=new FormData(loginForm);
+    const email=String(f.get('email')).trim(),password=String(f.get('password'));
+    if(signup&&password.length<10){$('login-status').textContent='请设置至少 10 个字符的独立密码。';return;}
+    $('login-button').disabled=true;$('signup-button').disabled=true;
+    $('login-status').textContent=signup?'正在设置账号…':'正在登录…';
+    try{
+      if(signup){
+        const {data,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/admin.html'}});
+        if(error)throw error;
+        loginForm.elements.password.value='';
+        if(data.session){await enter();}
+        else $('login-status').textContent='请查看邮箱（包括垃圾邮件），点击确认链接验证邮箱，然后返回此页用刚设置的密码登录。已有账号请直接登录。';
+      }else{
+        const {error}=await db.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        loginForm.reset();$('login-status').textContent='';await enter();
+      }
+    }catch(error){
+      const messages={email_not_confirmed:'请先打开邮箱中的确认邮件，完成验证后再登录。',over_email_send_rate_limit:'邮件发送次数已达上限，请稍后再试。',email_address_not_authorized:'邮件服务暂不能向该邮箱发送验证邮件，请联系网站管理员完成邮件配置。',weak_password:'密码强度不足，请使用更长且不重复的密码。',user_already_exists:'账号已存在，请直接登录。'};
+      $('login-status').textContent=messages[error.code]||(signup?'账号设置未完成，请稍后重试；若仍失败，请告知管理员。':'无法登录，请检查账号和密码。');
+    }finally{$('login-button').disabled=false;$('signup-button').disabled=false;}
+  });
   $('logout').onclick=async()=>{clear();await db.auth.signOut();};
   db.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')clear();});
   $('refresh').onclick=refresh;['search','attendance','follow-filter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
