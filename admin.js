@@ -62,7 +62,31 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&authorized)refresh();});
   function openDetail(r){selected={...r};$('guest-detail').replaceChildren();for(const [k,v]of Object.entries({'姓名':r.name,'联系方式':r.contact,'出席':r.attending?'是':'否','人数':r.adults+r.children,'留言':r.message||'—','提交时间':time(r.created_at),'最近修改':time(r.updated_at)})){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;$('guest-detail').append(dt,dd);}$('detail-form').elements.follow_up.value=r.follow_up;$('detail-form').elements.notes.value=r.notes;$('detail-status').textContent='';$('detail').showModal();}
   $('close-detail').onclick=()=>$('detail').close();
-  $('detail-form').onsubmit=async e=>{e.preventDefault();if(!selected||!authorized)return;$('save-detail').disabled=true;$('detail-status').textContent='保存中…';try{const f=new FormData(e.currentTarget);const {data,error}=await db.from('wedding_rsvps').update({follow_up:f.get('follow_up'),notes:String(f.get('notes')).trim()}).eq('id',selected.id).eq('updated_at',selected.updated_at).select('id,updated_at');if(error)throw error;if(!data.length){$('detail-status').textContent='这条回复已被其他操作修改，请关闭详情，刷新后重试。';return;}selected.updated_at=data[0].updated_at;$('detail-status').textContent='已保存';await refresh();}catch{$('detail-status').textContent='保存失败，请稍后重试。';}finally{$('save-detail').disabled=false;}};
+  $('detail').addEventListener('cancel',e=>{if(deleting)e.preventDefault();});
+  $('detail-form').onsubmit=async e=>{e.preventDefault();if(!selected||!authorized||deleting)return;$('save-detail').disabled=true;$('detail-status').textContent='保存中…';try{const f=new FormData(e.currentTarget);const {data,error}=await db.from('wedding_rsvps').update({follow_up:f.get('follow_up'),notes:String(f.get('notes')).trim()}).eq('id',selected.id).eq('updated_at',selected.updated_at).select('id,updated_at');if(error)throw error;if(!data.length){$('detail-status').textContent='这条回复已被其他操作修改，请关闭详情，刷新后重试。';return;}selected.updated_at=data[0].updated_at;$('detail-status').textContent='已保存';await refresh();}catch{$('detail-status').textContent='保存失败，请稍后重试。';}finally{$('save-detail').disabled=false;}};
+
+  const deleteButton=document.createElement('button');
+  deleteButton.id='delete-guest';deleteButton.type='button';deleteButton.textContent='删除宾客';
+  deleteButton.style.cssText='background:#8c3e35;border-color:#8c3e35;margin-left:12px';
+  $('save-detail').after(deleteButton);
+  let deleting=false;
+  deleteButton.onclick=async()=>{
+    if(!selected||!authorized||deleting||$('save-detail').disabled)return;
+    const target={...selected},epoch=generation;
+    if(!window.confirm('确定删除「'+target.name+'」的 RSVP 回复？\n姓名、联系方式及留言将永久删除，人数统计会同步更新。'))return;
+    deleting=true;deleteButton.disabled=true;$('save-detail').disabled=true;$('close-detail').disabled=true;
+    $('detail-status').textContent='删除中…';
+    try{
+      const {data,error}=await db.from('wedding_rsvps').delete().eq('id',target.id).eq('updated_at',target.updated_at).select('id');
+      if(error)throw error;
+      if(!authorized||epoch!==generation)return;
+      if(!data?.length){$('detail-status').textContent='资料已被修改、删除或权限已变更，请关闭详情并刷新后重试。';await refresh();return;}
+      selected=null;$('detail').close();
+      rows=rows.filter(r=>r.id!==target.id);render();await refresh();
+    }catch{if(epoch===generation)$('detail-status').textContent='未能确认删除结果，请刷新名单检查后再试。';}
+    finally{deleting=false;deleteButton.disabled=false;$('save-detail').disabled=false;$('close-detail').disabled=false;}
+  };
+
   function csvCell(v){let s=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
   $('export').onclick=()=>{if(!authorized)return;const data=[['姓名','联系方式','出席','出席人数','留言','跟进','内部备注','提交时间（马来西亚）'],...filtered().map(r=>[r.name,r.contact,r.attending?'是':'否',r.attending?r.adults+r.children:0,r.message,statuses[r.follow_up],r.notes,time(r.created_at)])];const blob=new Blob(['\ufeff'+data.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='wedding-rsvp.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
   if(!cfg.adminSetupPending)db.auth.getSession().then(({data})=>{if(data.session)enter();});
