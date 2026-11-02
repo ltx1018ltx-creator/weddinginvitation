@@ -7,14 +7,13 @@
   const storeKey='wedding-rsvp-submission-v1';
   let pending=null;
   try { pending=JSON.parse(localStorage.getItem(storeKey)||'null'); } catch {}
-  const db=window.supabase?.createClient(WEDDING_DB.url,WEDDING_DB.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const api='https://nicole-wedding-api.ltx1018-ltx.workers.dev/rsvp';
   function success(){form.hidden=true;document.getElementById('rsvp-success').hidden=false;document.getElementById('rsvp-success').focus();}
   if(pending?.done) success();
   function countsState(){const yes=attendance.value!=='no',minimum=attendance.value==='partner'?2:1;counts.hidden=!yes;form.elements.adults.disabled=!yes;form.elements.adults.min=String(minimum);if(yes&&Number(form.elements.adults.value)<minimum)form.elements.adults.value=String(minimum);}
   attendance.addEventListener('change',countsState);countsState();
-  if(!db){button.disabled=true;status.textContent='The form could not load. Please refresh and try again.';}
   form.addEventListener('submit',async e=>{
-    e.preventDefault();if(!db||button.disabled)return;
+    e.preventDefault();if(button.disabled)return;
     if(form.elements.website.value)return;
     const f=new FormData(form),yes=['yes','partner'].includes(f.get('attending'));
     const payload={name:String(f.get('name')).trim(),contact:String(f.get('contact')).trim(),attending:yes,adults:yes?Number(f.get('adults')):0,message:String(f.get('message')||'').trim()};
@@ -27,8 +26,8 @@
     try{localStorage.setItem(storeKey,JSON.stringify(pending));}catch{}
     button.disabled=true;button.textContent='Saving…';status.textContent='';
     try{
-      const {error}=await db.from('wedding_rsvps').insert({id:pending.id,...payload});
-      if(error&&error.code!=='23505')throw error;
+      const response=await fetch(api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:pending.id,...payload}),signal:AbortSignal.timeout(20000)});
+      const result=await response.json();if(!response.ok||!result.ok)throw Error('Unable to confirm response');
       pending.done=true;try{localStorage.setItem(storeKey,JSON.stringify(pending));}catch{}
       success();
     }catch{status.textContent='We could not confirm your response. Please try again. Your details are still on this page; retrying will not create a duplicate.';}
